@@ -117,6 +117,54 @@ MODEL_OPTIONS: ProviderModeOptions = {
 }
 
 
+# ── QuantAI shared-catalog override (guarded) ───────────────────────────
+# On QuantAI machines the canonical model catalog lives in
+# ~/.quantai/llm/catalog.json (see quantai-core). When it is readable we
+# rebuild MODEL_OPTIONS from it; on ANY failure (quantai-core not
+# installed, file missing/invalid) the bundled literal above stays
+# authoritative, so upstream behavior is unchanged.
+
+_CUSTOM_SENTINEL_PROVIDERS = ("deepseek", "qwen", "glm")
+
+
+def _shared_catalog_options() -> "ProviderModeOptions | None":
+    try:
+        from quantai_core.llm_config import load_catalog
+
+        catalog = load_catalog()
+    except Exception:
+        return None
+    shared: ProviderModeOptions = {}
+    for m in catalog.get("models", []):
+        entry: ModelOption = (m.get("display") or m["id"], m["id"])
+        for mode in ("quick", "deep"):
+            if mode in (m.get("tier") or []):
+                shared.setdefault(m["provider"], {"quick": [], "deep": []})[mode].append(entry)
+    if not shared:
+        return None
+    # The "Custom model ID" sentinels are app-local UI affordances, not
+    # catalog models — re-append them where the bundled catalog had them.
+    for provider in _CUSTOM_SENTINEL_PROVIDERS:
+        if provider in shared:
+            for mode in ("quick", "deep"):
+                shared[provider][mode].append(("Custom model ID", "custom"))
+    # Merge: shared wins per provider, but keep bundled providers/modes the
+    # shared file doesn't cover so the CLI never loses a selection list.
+    merged: ProviderModeOptions = {}
+    for provider, modes in {**MODEL_OPTIONS, **shared}.items():
+        bundled = MODEL_OPTIONS.get(provider, {})
+        merged[provider] = {
+            mode: (modes.get(mode) or bundled.get(mode) or [])
+            for mode in ("quick", "deep")
+        }
+    return merged
+
+
+_shared_options = _shared_catalog_options()
+if _shared_options:
+    MODEL_OPTIONS = _shared_options
+
+
 def get_model_options(provider: str, mode: str) -> List[ModelOption]:
     """Return shared model options for a provider and selection mode."""
     return MODEL_OPTIONS[provider.lower()][mode]
