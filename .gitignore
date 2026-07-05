@@ -220,3 +220,7 @@ __marimo__/
 
 # macOS
 .DS_Store
+
+# Enterprise env file (secrets) and generated run reports
+.env.enterprise
+reports/
