@@ -24,6 +24,20 @@ _EFFORT_MODEL = re.compile(r"^claude-(opus|sonnet|fable)-(\d+)(?:-(\d+))?$")
 _EFFORT_MIN_VERSION = {"opus": (4, 5), "sonnet": (4, 6), "fable": (5, 0)}
 
 
+# Anthropic reasoning models (Fable/Mythos family) run with thinking always
+# on and reject forced ``tool_choice`` — which is how langchain-anthropic's
+# default ``with_structured_output(method="function_calling")`` binds. They
+# must use the native structured-outputs API (``method="json_schema"``);
+# with the default method every structured call 400s and the Trader /
+# Research Manager / Portfolio Manager silently degrade to free text.
+_ALWAYS_ON_THINKING = re.compile(r"^claude-(fable|mythos)-")
+
+
+def requires_json_schema_structured_output(model: str) -> bool:
+    """Whether structured output must use ``method="json_schema"`` for this model."""
+    return bool(_ALWAYS_ON_THINKING.match(model.lower()))
+
+
 def _supports_effort(model: str) -> bool:
     """Whether Anthropic accepts the ``effort`` parameter for this model."""
     model_lc = model.lower()

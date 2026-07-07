@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Breaking changes within the 0.x line are called out explicitly.
 
+## [Unreleased]
+
+### Fixed
+
+- **Structured output works on Anthropic reasoning models.** Fable/Mythos
+  models run with thinking always on and reject the forced tool_choice behind
+  langchain's default `with_structured_output(method="function_calling")`, so
+  every Trader / Research Manager / Portfolio Manager structured call 400'd
+  and silently fell back to free text. `bind_structured` now binds those
+  models with the native structured-outputs API (`method="json_schema"`).
+
+### Changed
+
+- **Anthropic deep-tier default is Claude Opus 4.8** (was Fable 5 — 2× the
+  price for the two synthesis calls per run, plus the structured-output issue
+  above). Dropped Claude Opus 4.7 from the catalog (same price as 4.8,
+  strictly older). Catalog labels now carry per-1M-token prices like the
+  OpenAI tier.
+
 ## [0.3.1] — 2026-07-05
 
 Correctness and stability patch: data look-ahead, graph-router crash-safety,

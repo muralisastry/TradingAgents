@@ -29,6 +29,25 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 
+def _structured_output_kwargs(llm: Any) -> dict[str, Any]:
+    """Provider-specific kwargs for ``with_structured_output``.
+
+    Anthropic reasoning models (Fable/Mythos: thinking always on) reject the
+    forced tool_choice behind the default ``method="function_calling"`` — the
+    call 400s every time and the agent silently degrades to free text. Bind
+    them with the native structured-outputs API instead.
+    """
+    model = str(getattr(llm, "model", "") or "")
+    if model:
+        from tradingagents.llm_clients.anthropic_client import (
+            requires_json_schema_structured_output,
+        )
+
+        if requires_json_schema_structured_output(model):
+            return {"method": "json_schema"}
+    return {}
+
+
 def bind_structured(llm: Any, schema: type[T], agent_name: str) -> Any | None:
     """Return ``llm.with_structured_output(schema)`` or ``None`` if unsupported.
 
@@ -36,7 +55,7 @@ def bind_structured(llm: Any, schema: type[T], agent_name: str) -> Any | None:
     will use free-text generation for every call instead of one-shot fallback.
     """
     try:
-        return llm.with_structured_output(schema)
+        return llm.with_structured_output(schema, **_structured_output_kwargs(llm))
     except (NotImplementedError, AttributeError) as exc:
         logger.warning(
             "%s: provider does not support with_structured_output (%s); "
