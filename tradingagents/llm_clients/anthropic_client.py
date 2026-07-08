@@ -85,6 +85,14 @@ class AnthropicClient(BaseLLMClient):
                 continue
             llm_kwargs[key] = self.kwargs[key]
 
+        # Opt-in Anthropic prompt caching: the top-level auto-cache request
+        # param caches the last cacheable block of every request. Reads bill
+        # at 0.1x, writes at 1.25x — so this pays off when prompts share a
+        # growing prefix (analyst tool loops, multi-round debates at
+        # depth >= 2) and is roughly a wash for single-shot calls at depth 1.
+        if self.kwargs.get("prompt_caching"):
+            llm_kwargs["model_kwargs"] = {"cache_control": {"type": "ephemeral"}}
+
         return NormalizedChatAnthropic(**llm_kwargs)
 
     def validate_model(self) -> bool:

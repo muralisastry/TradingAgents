@@ -25,6 +25,9 @@ _ENV_OVERRIDES = {
     "TRADINGAGENTS_GOOGLE_THINKING_LEVEL":   "google_thinking_level",
     "TRADINGAGENTS_OPENAI_REASONING_EFFORT": "openai_reasoning_effort",
     "TRADINGAGENTS_ANTHROPIC_EFFORT":        "anthropic_effort",
+    "TRADINGAGENTS_ANTHROPIC_EFFORT_QUICK":  "anthropic_effort_quick",
+    "TRADINGAGENTS_ANTHROPIC_EFFORT_DEEP":   "anthropic_effort_deep",
+    "TRADINGAGENTS_ANTHROPIC_PROMPT_CACHING": "anthropic_prompt_caching",
 }
 
 
@@ -91,6 +94,15 @@ DEFAULT_CONFIG = _apply_env_overrides({
     "google_thinking_level": None,      # "high", "minimal", etc.
     "openai_reasoning_effort": None,    # "medium", "high", "low"
     "anthropic_effort": None,           # "high", "medium", "low"
+    # Per-tier effort overrides (fall back to anthropic_effort). The quick
+    # tier makes ~15 volume calls/run vs the deep tier's 2 synthesis calls —
+    # quick="low" + deep="high" cuts thinking spend where it matters least.
+    "anthropic_effort_quick": None,
+    "anthropic_effort_deep": None,
+    # Opt-in Anthropic prompt caching (top-level auto-cache). Pays off when
+    # prompts share a growing prefix — analyst tool loops and multi-round
+    # debates (depth >= 2). Roughly a wash at depth 1 (cache writes bill 1.25x).
+    "anthropic_prompt_caching": False,
     # Sampling temperature, forwarded to every provider when set. None leaves
     # each provider at its own default. Lower values reduce run-to-run
     # variation on models that honor it; reasoning models largely ignore it
