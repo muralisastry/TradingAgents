@@ -103,10 +103,17 @@ DEFAULT_CONFIG = _apply_env_overrides({
     # quick="low" + deep="high" cuts thinking spend where it matters least.
     "anthropic_effort_quick": None,
     "anthropic_effort_deep": None,
-    # Opt-in Anthropic prompt caching (top-level auto-cache). Pays off when
-    # prompts share a growing prefix — analyst tool loops and multi-round
-    # debates (depth >= 2). Roughly a wash at depth 1 (cache writes bill 1.25x).
-    "anthropic_prompt_caching": False,
+    # Anthropic prompt caching (top-level auto-cache). Pays off when prompts
+    # share a growing prefix — analyst tool loops and multi-round debates —
+    # and is roughly a wash on a single-shot call (writes bill 1.25x, reads
+    # 0.1x, so break-even is two reads of the same prefix).
+    #
+    # Fork default: on (2026-09-04). Measured over 470 runs, input was ~53% of
+    # spend and every call was uncached. A two-call probe on claude-sonnet-5
+    # confirmed the kwarg reaches the API: call 2 read 16,431 tokens from
+    # cache. Set TRADINGAGENTS_ANTHROPIC_PROMPT_CACHING=0 to turn it off
+    # without a code change.
+    "anthropic_prompt_caching": True,
     # Sampling temperature, forwarded to every provider when set. None leaves
     # each provider at its own default. Lower values reduce run-to-run
     # variation on models that honor it; reasoning models largely ignore it
