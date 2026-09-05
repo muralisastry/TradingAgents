@@ -19,11 +19,19 @@ Breaking changes within the 0.x line are called out explicitly.
 
 ### Changed
 
-- **Anthropic deep-tier default is Claude Opus 4.8** (was Fable 5 — 2× the
-  price for the two synthesis calls per run, plus the structured-output issue
-  above). Dropped Claude Opus 4.7 from the catalog (same price as 4.8,
-  strictly older). Catalog labels now carry per-1M-token prices like the
-  OpenAI tier.
+- **The Trader runs on the deep tier** (fork divergence — upstream wires it to
+  the quick tier). It turns the research plan into the actual transaction
+  proposal, so it is the one node whose output is acted on directly; running
+  the decision on the cheap model to save ~$0.06/run was the wrong trade.
+  Deep-tier membership is now three nodes — Research Manager, Portfolio
+  Manager, Trader — and `tests/test_graph_tiers.py` pins the whole map so an
+  upstream merge cannot re-tier a node silently.
+- **Anthropic deep-tier default is Claude Sonnet 5**, quick tier Claude Haiku
+  4.5. Dropped Claude Opus 4.7 from the catalog (same price as 4.8, strictly
+  older). Catalog labels now carry per-1M-token prices like the OpenAI tier.
+  (This entry previously claimed the deep default was Opus 4.8; that was
+  superseded on 2026-07-12 and never corrected here. `default_config.py` and
+  the shared catalog have shipped Sonnet 5 since.)
 ## [0.4.0] — 2026-08-31
 
 Look-ahead and point-in-time fixes across the data and memory layers, clearer
