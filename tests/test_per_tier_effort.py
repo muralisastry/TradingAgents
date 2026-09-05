@@ -30,7 +30,21 @@ def test_no_effort_when_nothing_set():
 
 def test_prompt_caching_flag_threads_through():
     assert _kwargs({"anthropic_prompt_caching": True}, "quick")["prompt_caching"] is True
-    assert "prompt_caching" not in _kwargs({}, "quick")
+    # Explicitly off must reach the client as *absent*, not as False — the
+    # client tests truthiness, so a stray False would still be a no-op, but
+    # absence is what the off path is supposed to produce.
+    assert "prompt_caching" not in _kwargs({"anthropic_prompt_caching": False}, "quick")
+
+
+def test_prompt_caching_is_on_without_an_override():
+    """The fork default reaches the client with no config passed.
+
+    Previously this asserted the opposite (absent by default). Flipping the
+    default is the whole change, so the assertion flips with it — and this is
+    what fails if an upstream merge restores upstream's off default.
+    """
+    for tier in ("quick", "deep"):
+        assert _kwargs({}, tier)["prompt_caching"] is True
 
 
 def test_anthropic_client_injects_cache_control():
@@ -44,4 +58,6 @@ def test_anthropic_client_injects_cache_control():
 def test_default_config_has_new_keys():
     assert DEFAULT_CONFIG["anthropic_effort_quick"] is None
     assert DEFAULT_CONFIG["anthropic_effort_deep"] is None
-    assert DEFAULT_CONFIG["anthropic_prompt_caching"] is False
+    # Fork default: caching on (2026-09-04). Upstream ships it off; this
+    # assertion is what catches an upstream merge silently reverting it.
+    assert DEFAULT_CONFIG["anthropic_prompt_caching"] is True

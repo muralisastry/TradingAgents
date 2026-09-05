@@ -19,6 +19,14 @@ Breaking changes within the 0.x line are called out explicitly.
 
 ### Changed
 
+- **Anthropic prompt caching is on by default** (fork divergence — upstream
+  ships it off). Measured across 470 logged runs, input was ~53% of spend and
+  every single call was uncached; the pipeline re-sends a growing prefix on
+  every analyst tool loop and debate round, which is what caching is for.
+  Reads bill at 0.1× input. Verified rather than assumed: a two-call probe on
+  claude-sonnet-5 confirmed the kwarg reaches the API, with call 2 reading
+  16,431 tokens from cache. `TRADINGAGENTS_ANTHROPIC_PROMPT_CACHING=0` turns
+  it off without a code change.
 - **The Trader runs on the deep tier** (fork divergence — upstream wires it to
   the quick tier). It turns the research plan into the actual transaction
   proposal, so it is the one node whose output is acted on directly; running
