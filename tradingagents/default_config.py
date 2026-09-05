@@ -19,6 +19,7 @@ _ENV_OVERRIDES = {
     "TRADINGAGENTS_BENCHMARK_TICKER":     "benchmark_ticker",
     "TRADINGAGENTS_TEMPERATURE":          "temperature",
     "TRADINGAGENTS_LLM_MAX_RETRIES":      "llm_max_retries",
+    "TRADINGAGENTS_MAX_TOKENS":           "max_tokens",
     # Provider-specific reasoning/thinking knobs (None = each provider's own
     # default). Settable here for non-interactive runs; the CLI also offers an
     # interactive choice, which is skipped when the matching var is set.
@@ -81,6 +82,9 @@ DEFAULT_CONFIG = _apply_env_overrides({
     # Pending entries are never pruned. None disables rotation entirely.
     "memory_log_max_entries": None,
     # LLM settings
+    # Fork override (2026-07-12): the suite runs on Anthropic, so upstream's
+    # OpenAI defaults are deliberately not taken. Upstream moved gpt-5.5 ->
+    # gpt-5.6 / gpt-5.6-luna in v0.4.0; both remain selectable, just not default.
     "llm_provider": "anthropic",
     "deep_think_llm": "claude-sonnet-5",
     "quick_think_llm": "claude-haiku-4-5",
@@ -112,6 +116,11 @@ DEFAULT_CONFIG = _apply_env_overrides({
     # provider/SDK at its own default (usually 2). Raise it to ride out bursty
     # 429 throttling on rate-limited deployments instead of aborting a run (#1091).
     "llm_max_retries": None,
+    # Cap on output tokens forwarded to every provider chat client. None leaves
+    # each provider at its own default. Set it to bound a model that emits
+    # unbounded reasoning/output and hangs or trips a gateway idle timeout
+    # (e.g. some deepseek-v4-flash deployments, #1204).
+    "max_tokens": None,
     # Checkpoint/resume: when True, LangGraph saves state after each node
     # so a crashed run can resume from the last successful step.
     "checkpoint_enabled": False,

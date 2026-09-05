@@ -20,6 +20,8 @@ def _reload_with_env(monkeypatch, **overrides):
 
 def test_no_env_uses_built_in_defaults(monkeypatch):
     dc = _reload_with_env(monkeypatch)
+    # Fork override — see default_config.py. Upstream asserts its own
+    # gpt-5.6 defaults here; ours must assert what this fork actually ships.
     assert dc.DEFAULT_CONFIG["llm_provider"] == "anthropic"
     assert dc.DEFAULT_CONFIG["deep_think_llm"] == "claude-sonnet-5"
     assert dc.DEFAULT_CONFIG["quick_think_llm"] == "claude-haiku-4-5"
