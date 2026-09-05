@@ -174,10 +174,20 @@ _PASSTHROUGH_KWARGS = (
 # Drop the kwarg for those rather than crash the run.
 _OPENAI_REASONING_MODEL = re.compile(r"^(gpt-5|o[1-9])")
 
+# GLM 4.7+ accepts reasoning_effort on the same OpenAI-compatible endpoint, but
+# with its own model names — the OpenAI regex above rejects every one of them.
+# The gate is per-provider because a wrong answer fails in opposite directions:
+# sending the kwarg to a model that doesn't take it 400s the run, while
+# dropping it for one that does silently ignores the caller's request.
+_GLM_REASONING_MODEL = re.compile(r"^glm-(4\.7|5)")
 
-def _supports_reasoning_effort(model: str) -> bool:
-    """Whether the (native OpenAI) model accepts ``reasoning_effort``."""
-    return bool(_OPENAI_REASONING_MODEL.match(model.lower().strip()))
+
+def _supports_reasoning_effort(model: str, provider: str = "") -> bool:
+    """Whether ``model`` on ``provider`` accepts ``reasoning_effort``."""
+    m = model.lower().strip()
+    if provider.lower().startswith("glm"):
+        return bool(_GLM_REASONING_MODEL.match(m))
+    return bool(_OPENAI_REASONING_MODEL.match(m))
 
 
 @dataclass(frozen=True)
@@ -325,9 +335,19 @@ class OpenAIClient(BaseLLMClient):
         for key in _PASSTHROUGH_KWARGS:
             if key not in self.kwargs:
                 continue
-            if key == "reasoning_effort" and not _supports_reasoning_effort(self.model):
+            if key == "reasoning_effort" and not _supports_reasoning_effort(
+                self.model, self.provider
+            ):
                 continue
             llm_kwargs[key] = self.kwargs[key]
+
+        # `thinking` is not part of the OpenAI schema, so it cannot ride the
+        # passthrough loop above — the SDK rejects unknown top-level kwargs.
+        # extra_body puts it at the top level of the request body, which is
+        # where GLM expects it.
+        thinking = self.kwargs.get("thinking")
+        if thinking:
+            llm_kwargs["extra_body"] = {**llm_kwargs.get("extra_body", {}), "thinking": thinking}
 
         # The subclass (provider quirks) comes from the registry spec.
         return chat_cls(**llm_kwargs)
