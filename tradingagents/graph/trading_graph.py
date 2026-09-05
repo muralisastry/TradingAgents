@@ -199,6 +199,20 @@ class TradingAgentsGraph:
             if self.config.get("anthropic_prompt_caching"):
                 kwargs["prompt_caching"] = True
 
+        elif provider in ("glm", "glm-cn"):
+            # GLM speaks the OpenAI-compatible wire format but its provider
+            # string is "glm", so it never matched the `openai` branch above and
+            # both of these were silently dropped — the run looked fine and just
+            # wasn't reasoning.
+            if self.config.get("glm_thinking"):
+                kwargs["thinking"] = {"type": "enabled"}
+            effort = None
+            if tier:
+                effort = self.config.get(f"glm_reasoning_effort_{tier}")
+            effort = effort or self.config.get("glm_reasoning_effort")
+            if effort:
+                kwargs["reasoning_effort"] = effort
+
         # Sampling temperature is cross-provider: forward it whenever set.
         # float() here so a value coming from a TRADINGAGENTS_TEMPERATURE env
         # string ("0.2") works the same as a programmatic float.

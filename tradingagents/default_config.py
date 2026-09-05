@@ -29,6 +29,10 @@ _ENV_OVERRIDES = {
     "TRADINGAGENTS_ANTHROPIC_EFFORT_QUICK":  "anthropic_effort_quick",
     "TRADINGAGENTS_ANTHROPIC_EFFORT_DEEP":   "anthropic_effort_deep",
     "TRADINGAGENTS_ANTHROPIC_PROMPT_CACHING": "anthropic_prompt_caching",
+    "TRADINGAGENTS_GLM_THINKING":            "glm_thinking",
+    "TRADINGAGENTS_GLM_REASONING_EFFORT":       "glm_reasoning_effort",
+    "TRADINGAGENTS_GLM_REASONING_EFFORT_QUICK": "glm_reasoning_effort_quick",
+    "TRADINGAGENTS_GLM_REASONING_EFFORT_DEEP":  "glm_reasoning_effort_deep",
 }
 
 
@@ -103,6 +107,17 @@ DEFAULT_CONFIG = _apply_env_overrides({
     # quick="low" + deep="high" cuts thinking spend where it matters least.
     "anthropic_effort_quick": None,
     "anthropic_effort_deep": None,
+    # GLM thinking mode (Z.AI / BigModel). GLM 4.7+ takes a top-level
+    # `thinking: {"type": "enabled"}` on the request body — an extension to the
+    # OpenAI-compatible schema, so it rides `extra_body`, not a bare kwarg.
+    # On by default: the provider is only ever selected deliberately, and the
+    # deep tier is synthesis work that wants reasoning.
+    "glm_thinking": True,
+    # GLM reasoning effort ("minimal" … "max"). None leaves Z.AI's own default.
+    # Per-tier keys fall back to the shared one, mirroring anthropic_effort_*.
+    "glm_reasoning_effort": None,
+    "glm_reasoning_effort_quick": None,
+    "glm_reasoning_effort_deep": None,
     # Anthropic prompt caching (top-level auto-cache). Pays off when prompts
     # share a growing prefix — analyst tool loops and multi-round debates —
     # and is roughly a wash on a single-shot call (writes bill 1.25x, reads
