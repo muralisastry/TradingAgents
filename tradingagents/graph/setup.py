@@ -83,7 +83,10 @@ class GraphSetup:
         bull_researcher_node = create_bull_researcher(self.quick_thinking_llm)
         bear_researcher_node = create_bear_researcher(self.quick_thinking_llm)
         research_manager_node = create_research_manager(self.deep_thinking_llm)
-        trader_node = create_trader(self.quick_thinking_llm)
+        # Fork divergence (2026-09-04): upstream runs the Trader on the quick
+        # tier. It is the node that produces the actual trade decision, so it
+        # gets the deep model here. One call per run — see test_graph_tiers.
+        trader_node = create_trader(self.deep_thinking_llm)
 
         # Create risk analysis nodes
         aggressive_analyst = create_aggressive_debator(self.quick_thinking_llm)
