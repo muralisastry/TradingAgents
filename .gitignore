@@ -223,4 +223,8 @@ __marimo__/
 
 # Enterprise env file (secrets) and generated run reports
 .env.enterprise
+
+# Playwright MCP browser-session snapshots (page/console captures from
+# interactive debugging) — session scratch, not project state.
+.playwright-mcp/
 reports/
