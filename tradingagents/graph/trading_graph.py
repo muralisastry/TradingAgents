@@ -114,18 +114,8 @@ class TradingAgentsGraph:
             deep_kwargs["callbacks"] = self.callbacks
             quick_kwargs["callbacks"] = self.callbacks
 
-        deep_client = create_llm_client(
-            provider=self.config["llm_provider"],
-            model=self.config["deep_think_llm"],
-            base_url=self.config.get("backend_url"),
-            **deep_kwargs,
-        )
-        quick_client = create_llm_client(
-            provider=self.config["llm_provider"],
-            model=self.config["quick_think_llm"],
-            base_url=self.config.get("backend_url"),
-            **quick_kwargs,
-        )
+        deep_client = self._build_tier_client("deep", deep_kwargs)
+        quick_client = self._build_tier_client("quick", quick_kwargs)
 
         self.deep_thinking_llm = deep_client.get_llm()
         self.quick_thinking_llm = quick_client.get_llm()
@@ -167,6 +157,34 @@ class TradingAgentsGraph:
         self._checkpointer_ctx = None
         self._resuming = False
 
+    def _tier_provider(self, tier: str | None = None) -> str:
+        """The provider a tier runs on: ``<tier>_llm_provider`` when set, else
+        the shared ``llm_provider``. Lower-cased."""
+        provider = None
+        if tier:
+            provider = self.config.get(f"{tier}_llm_provider")
+        return str(provider or self.config.get("llm_provider", "")).lower()
+
+    def _build_tier_client(self, tier: str, kwargs: dict[str, Any]):
+        """One LLM client for ``tier`` on that tier's own provider.
+
+        ``backend_url`` is a per-provider endpoint override, so it only rides
+        with the shared provider; a tier on a different provider keeps that
+        provider's default endpoint.
+        """
+        provider = self._tier_provider(tier)
+        base_url = (
+            self.config.get("backend_url")
+            if provider == str(self.config.get("llm_provider", "")).lower()
+            else None
+        )
+        return create_llm_client(
+            provider=provider,
+            model=self.config["deep_think_llm" if tier == "deep" else "quick_think_llm"],
+            base_url=base_url,
+            **kwargs,
+        )
+
     def _get_provider_kwargs(self, tier: str | None = None) -> dict[str, Any]:
         """Get provider-specific kwargs for LLM client creation.
 
@@ -177,7 +195,7 @@ class TradingAgentsGraph:
         least. Per-tier keys fall back to the shared single-value key.
         """
         kwargs = {}
-        provider = self.config.get("llm_provider", "").lower()
+        provider = self._tier_provider(tier)
 
         if provider == "google":
             thinking_level = self.config.get("google_thinking_level")
