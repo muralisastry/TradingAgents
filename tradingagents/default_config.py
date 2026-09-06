@@ -11,6 +11,10 @@ _ENV_OVERRIDES = {
     "TRADINGAGENTS_LLM_PROVIDER":         "llm_provider",
     "TRADINGAGENTS_DEEP_THINK_LLM":       "deep_think_llm",
     "TRADINGAGENTS_QUICK_THINK_LLM":      "quick_think_llm",
+    # Per-tier provider overrides (None = the shared llm_provider): lets the
+    # ~15 quick calls run on one provider and the ~3 deep calls on another.
+    "TRADINGAGENTS_DEEP_LLM_PROVIDER":    "deep_llm_provider",
+    "TRADINGAGENTS_QUICK_LLM_PROVIDER":   "quick_llm_provider",
     "TRADINGAGENTS_LLM_BACKEND_URL":      "backend_url",
     "TRADINGAGENTS_OUTPUT_LANGUAGE":      "output_language",
     "TRADINGAGENTS_MAX_DEBATE_ROUNDS":    "max_debate_rounds",
@@ -92,6 +96,12 @@ DEFAULT_CONFIG = _apply_env_overrides({
     "llm_provider": "anthropic",
     "deep_think_llm": "claude-sonnet-5",
     "quick_think_llm": "claude-haiku-4-5",
+    # Per-tier provider (None = inherit llm_provider). The 2026-09-05 speed
+    # study measured the quick tier at 85% of a run's wall time and the deep
+    # tier at ~3 calls, so "haiku quick + glm-5.3 deep" keeps Anthropic speed
+    # where the calls are and GLM reasoning where the synthesis is.
+    "deep_llm_provider": None,
+    "quick_llm_provider": None,
     # When None, each provider's client falls back to its own default endpoint
     # (api.openai.com for OpenAI, generativelanguage.googleapis.com for Gemini, ...).
     # The CLI overrides this per provider when the user picks one. Keeping a
