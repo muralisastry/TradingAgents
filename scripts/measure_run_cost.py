@@ -23,8 +23,12 @@ from dotenv import load_dotenv
 
 from cli.stats_handler import StatsCallbackHandler
 
-# $/1M tokens: (input, output, cache_read, cache_write_5m). Prefix-matched.
+# $/1M tokens: (input, output, cache_read, cache_write_5m). Prefix-matched,
+# first match in insertion order wins — so "claude-opus-5-5" must stay above
+# any "claude-opus-5" row that gets added later, or 5.5 bills at 5's rate.
+# Opus 5.5's cache read is 0.05x base input, not the usual 0.1x.
 PRICES = {
+    "claude-opus-5-5": (4.00, 20.00, 0.20, 5.00),
     "claude-opus-4-8": (5.00, 25.00, 0.50, 6.25),
     "claude-opus-4-7": (5.00, 25.00, 0.50, 6.25),
     "claude-sonnet-5": (3.00, 15.00, 0.30, 3.75),

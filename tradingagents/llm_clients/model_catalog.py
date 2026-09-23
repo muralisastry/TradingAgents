@@ -99,6 +99,7 @@ MODEL_OPTIONS: ProviderModeOptions = {
         ],
         "deep": [
             ("Claude Sonnet 5 - Near-frontier intelligence at Sonnet cost ($3/$15 per 1M tokens)", "claude-sonnet-5"),
+            ("Claude Opus 5.5 - Frontier agentic/coding, 1M context ($4/$20 per 1M tokens)", "claude-opus-5-5"),
             ("Claude Opus 4.8 - Frontier agentic reasoning ($5/$25 per 1M tokens)", "claude-opus-4-8"),
             ("Claude Fable 5 - Most capable, always-on thinking ($10/$50 per 1M tokens)", "claude-fable-5"),
         ],

@@ -39,6 +39,11 @@ class TestEffortGate:
         "model",
         [
             "claude-opus-4-5", "claude-opus-4-6", "claude-opus-4-7",
+            # Opus 5.5 (2026-09-21) — the Opus the catalog now offers. Real,
+            # shipping id, so it belongs here and not in the forward-compat
+            # case below: the dotted-version branch of the pattern is what
+            # actually carries effort to the model we hand users.
+            "claude-opus-5-5",
             "claude-sonnet-4-6",
         ],
     )
