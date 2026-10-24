@@ -18,7 +18,6 @@ import pytest
 from tradingagents.graph import setup as setup_mod
 from tradingagents.graph.conditional_logic import ConditionalLogic
 
-
 QUICK = object()
 DEEP = object()
 

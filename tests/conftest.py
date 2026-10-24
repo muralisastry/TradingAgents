@@ -1,7 +1,6 @@
 """Shared pytest fixtures that prevent CI hangs when API keys are absent."""
 
 import os
-
 import socket
 
 import pytest
