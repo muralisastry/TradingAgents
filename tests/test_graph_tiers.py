@@ -64,8 +64,8 @@ def wiring(monkeypatch):
     graph_setup = setup_mod.GraphSetup(
         quick_thinking_llm=QUICK,
         deep_thinking_llm=DEEP,
-        tool_nodes={k: (lambda state, *a, **k: state) for k in analyst_keys},
         conditional_logic=ConditionalLogic(),
+        max_tool_rounds=20,     # upstream 0.7: tools are declared per analyst, not passed in
     )
     graph_setup.setup_graph(selected_analysts=analyst_keys)
     return seen

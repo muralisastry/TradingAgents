@@ -1,0 +1,2 @@
+tests/test_alpha_vantage_hardening.py:generic-api-key:165
+tests/test_fred.py:generic-api-key:261

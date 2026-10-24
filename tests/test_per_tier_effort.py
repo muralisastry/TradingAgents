@@ -1,14 +1,18 @@
 """Per-tier Anthropic effort resolution and opt-in prompt caching."""
 
 from tradingagents.default_config import DEFAULT_CONFIG
-from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.llm_clients.factory import build_llm_kwargs, tier_provider
 from tradingagents.llm_clients.anthropic_client import AnthropicClient
 
 
+def _tier_kwargs(config, tier):
+    """What create_tier_client hands the client for ``tier`` (upstream 0.7 moved
+    this from TradingAgentsGraph._get_provider_kwargs into the factory)."""
+    return build_llm_kwargs({**config, "llm_provider": tier_provider(config, tier)}, tier=tier)
+
+
 def _kwargs(config_overrides, tier):
-    graph = object.__new__(TradingAgentsGraph)  # skip __init__ (no LLM construction)
-    graph.config = {**DEFAULT_CONFIG, "llm_provider": "anthropic", **config_overrides}
-    return graph._get_provider_kwargs(tier=tier)
+    return _tier_kwargs({**DEFAULT_CONFIG, "llm_provider": "anthropic", **config_overrides}, tier)
 
 
 def test_per_tier_effort_overrides_shared_value():
@@ -70,9 +74,7 @@ def test_default_config_has_new_keys():
 # symptom was a model quietly running in default mode.
 
 def _glm_kwargs(config_overrides, tier):
-    graph = object.__new__(TradingAgentsGraph)
-    graph.config = {**DEFAULT_CONFIG, "llm_provider": "glm", **config_overrides}
-    return graph._get_provider_kwargs(tier=tier)
+    return _tier_kwargs({**DEFAULT_CONFIG, "llm_provider": "glm", **config_overrides}, tier)
 
 
 def test_glm_thinking_is_on_by_default():
@@ -94,24 +96,20 @@ def test_glm_reasoning_effort_absent_when_unset():
 
 
 def test_glm_cn_gets_the_same_treatment():
-    graph = object.__new__(TradingAgentsGraph)
-    graph.config = {**DEFAULT_CONFIG, "llm_provider": "glm-cn",
-                    "glm_reasoning_effort_deep": "max"}
-    kw = graph._get_provider_kwargs(tier="deep")
+    kw = _tier_kwargs({**DEFAULT_CONFIG, "llm_provider": "glm-cn",
+                       "glm_reasoning_effort_deep": "max"}, "deep")
     assert kw["thinking"] == {"type": "enabled"}
     assert kw["reasoning_effort"] == "max"
 
 
 def test_anthropic_branch_is_unaffected_by_the_glm_keys():
     """The GLM keys must not leak into an Anthropic run."""
-    graph = object.__new__(TradingAgentsGraph)
-    graph.config = {**DEFAULT_CONFIG, "llm_provider": "anthropic"}
-    kw = graph._get_provider_kwargs(tier="deep")
+    kw = _tier_kwargs({**DEFAULT_CONFIG, "llm_provider": "anthropic"}, "deep")
     assert "thinking" not in kw and "reasoning_effort" not in kw
 
 
 # ── the kwargs must survive into the constructed client ───────────────────
-# Asserting on _get_provider_kwargs alone would pass while the client silently
+# Asserting on the factory's kwargs alone would pass while the client silently
 # discarded both: reasoning_effort is gated by a model regex that rejects every
 # GLM name, and `thinking` is not an OpenAI field, so a bare kwarg would be
 # dropped by the SDK rather than sent.

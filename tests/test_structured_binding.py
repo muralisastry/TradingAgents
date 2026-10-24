@@ -10,7 +10,7 @@ provider default.
 
 from pydantic import BaseModel
 
-from tradingagents.agents.utils.structured import bind_structured
+from tradingagents.agents.structured import bind_structured
 from tradingagents.llm_clients.anthropic_client import (
     requires_json_schema_structured_output,
 )

@@ -4,14 +4,12 @@ deep synthesis calls). Each tier's kwargs and client come from ITS provider."""
 
 import pytest
 
-from tradingagents.graph import trading_graph as tg
+from tradingagents import default_config
+from tradingagents.llm_clients import factory
 
 
-def _graph(config):
-    g = tg.TradingAgentsGraph.__new__(tg.TradingAgentsGraph)
-    g.config = config
-    g.callbacks = None
-    return g
+def _tier_kwargs(config, tier):
+    return factory.build_llm_kwargs({**config, "llm_provider": factory.tier_provider(config, tier)}, tier=tier)
 
 
 BASE = {
@@ -27,18 +25,21 @@ BASE = {
 @pytest.mark.unit
 class TestTierProvider:
     def test_tier_falls_back_to_the_shared_provider(self):
-        g = _graph({**BASE, "deep_llm_provider": None, "quick_llm_provider": None})
-        assert g._tier_provider("deep") == "glm" and g._tier_provider("quick") == "glm"
-        assert g._tier_provider() == "glm"
+        cfg = {**BASE, "deep_llm_provider": None, "quick_llm_provider": None}
+        assert factory.tier_provider(cfg, "deep") == "glm" and factory.tier_provider(cfg, "quick") == "glm"
 
     def test_tier_override_wins_and_is_lowercased(self):
-        g = _graph({**BASE, "quick_llm_provider": "Anthropic"})
-        assert g._tier_provider("quick") == "anthropic" and g._tier_provider("deep") == "glm"
+        cfg = {**BASE, "quick_llm_provider": "Anthropic"}
+        assert factory.tier_provider(cfg, "quick") == "anthropic" and factory.tier_provider(cfg, "deep") == "glm"
+
+    def test_upstream_name_wins_over_the_fork_alias(self):
+        cfg = {**BASE, "deep_think_provider": "openai", "deep_llm_provider": "anthropic"}
+        assert factory.tier_provider(cfg, "deep") == "openai"
 
     def test_kwargs_follow_each_tiers_provider(self):
-        g = _graph({**BASE, "quick_llm_provider": "anthropic"})
-        deep = g._get_provider_kwargs(tier="deep")
-        quick = g._get_provider_kwargs(tier="quick")
+        cfg = {**BASE, "quick_llm_provider": "anthropic"}
+        deep = _tier_kwargs(cfg, "deep")
+        quick = _tier_kwargs(cfg, "quick")
         # deep on GLM: thinking + max effort, no Anthropic keys
         assert deep["thinking"] == {"type": "enabled"} and deep["reasoning_effort"] == "max"
         assert "effort" not in deep and "prompt_caching" not in deep
@@ -48,10 +49,10 @@ class TestTierProvider:
 
     def test_clients_are_built_on_their_own_provider_and_backend_url_stays_with_the_shared_one(self, monkeypatch):
         seen = []
-        monkeypatch.setattr(tg, "create_llm_client", lambda **kw: seen.append(kw) or object())
-        g = _graph({**BASE, "quick_llm_provider": "anthropic"})
-        g._build_tier_client("deep", {"reasoning_effort": "max"})
-        g._build_tier_client("quick", {"effort": "low"})
+        monkeypatch.setattr(factory, "create_llm_client", lambda **kw: seen.append(kw) or object())
+        cfg = {**BASE, "quick_llm_provider": "anthropic"}
+        factory.create_tier_client(cfg, "deep")
+        factory.create_tier_client(cfg, "quick")
         deep, quick = seen
         assert deep["provider"] == "glm" and deep["model"] == "glm-5.3" and deep["base_url"] == "https://glm.example/v4"
         assert quick["provider"] == "anthropic" and quick["model"] == "claude-haiku-4-5" and quick["base_url"] is None
@@ -60,9 +61,9 @@ class TestTierProvider:
     def test_env_overrides_reach_the_config(self, monkeypatch):
         monkeypatch.setenv("TRADINGAGENTS_QUICK_LLM_PROVIDER", "anthropic")
         monkeypatch.setenv("TRADINGAGENTS_DEEP_LLM_PROVIDER", "glm")
-        import importlib
-
-        from tradingagents import default_config
-
-        cfg = importlib.reload(default_config).DEFAULT_CONFIG
+        # build_default_config(), not importlib.reload: a reload rebinds the
+        # module's DEFAULT_CONFIG with this test's env baked in, and monkeypatch
+        # restores the env but not the module, so every later test inherited
+        # deep_llm_provider="glm".
+        cfg = default_config.build_default_config()
         assert cfg["quick_llm_provider"] == "anthropic" and cfg["deep_llm_provider"] == "glm"
